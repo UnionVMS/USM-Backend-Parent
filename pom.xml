@@ -4,7 +4,7 @@
   <groupId>eu.europa.ec.mare.oss.usm</groupId>
   <!-- Uncomment usm-parent module in backend-modules pom.xml and adapt parent 
     version in modules to the snapshot version below to test parent pom modifications -->
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.0.0</version>
   <packaging>pom</packaging>
   <artifactId>USM-Backend-Parent</artifactId>
   <distributionManagement>
