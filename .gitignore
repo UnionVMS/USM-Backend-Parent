@@ -1,0 +1,13 @@
+*.settings/
+.svn/
+*target/
+*.project
+*.classpath
+*.externalToolBuilders/
+*.tern-project
+*.idea/
+*.factorypath
+*.pydevproject
+*arquillian.launch_file
+pom.xml.releaseBackup
+release.properties
