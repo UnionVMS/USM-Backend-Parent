@@ -36,6 +36,7 @@
     <docker.start.phase>process-test-resources</docker.start.phase>
     <wf.port>8080</wf.port>
     <wf.mgtport>9990</wf.mgtport>
+    <linkamq></linkamq>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -160,7 +161,7 @@
         <plugin>
           <groupId>io.fabric8</groupId>
           <artifactId>docker-maven-plugin</artifactId>
-          <version>0.15.2</version>
+          <version>0.21.0</version>
           <configuration>
             <dockerHost>https://${docker.machine.ip}:2376</dockerHost>
             <certPath>${docker.certPath}</certPath>
@@ -181,11 +182,11 @@
                     <port>8787:8787</port>
                   </ports>
                   <wait>
-                    <http>
+<!--                     <http>
                       <url>http://${docker.machine.ip}:${wf.mgtport}/management?operation=attribute&amp;name=server-state</url>
                       <status>200</status>
-                    </http>
-                    <log>WFLYSRV0025: WildFly.*started</log>
+                    </http> -->
+                    <log>WildFly.*started</log>
                     <time>30000</time>
                   </wait>
                 </run>
@@ -207,14 +208,15 @@
                   </ports>
                   <namingStrategy>alias</namingStrategy>
                   <links>
-                    <link>usm-pg-db:db</link>
+                    <link>usm-pg-db:db${linkamq}</link>
                   </links>
                   <wait>
-                    <http>
+                  
+<!--                     <http>
                       <url>http://${docker.machine.ip}:${wf.mgtport}/management?operation=attribute&amp;name=server-state</url>
                       <status>200</status>
-                    </http>
-                    <log>WFLYSRV0025: WildFly.*started</log>
+                    </http> -->
+                    <log>WildFly.*started</log>
                     <time>30000</time>
                   </wait>
                 </run>
@@ -332,6 +334,7 @@
       <properties>
         <wf.host>${docker.machine.ip}</wf.host>
         <endpoint-url>http://${wf.host}:${wf.port}/${webroot}/${restprefix}/</endpoint-url>
+        <docker.filter>wildfly-uvms</docker.filter>
       </properties>
       <build>
         <plugins>
@@ -350,6 +353,7 @@
       <properties>
         <wf.host>${docker.machine.ip}</wf.host>
         <endpoint-url>http://${wf.host}:${wf.port}/${webroot}/${restprefix}/</endpoint-url>
+        <docker.filter>dblinked-wildfly-uvms</docker.filter>
       </properties>
       <build>
         <plugins>
@@ -357,7 +361,7 @@
             <groupId>io.fabric8</groupId>
             <artifactId>docker-maven-plugin</artifactId>
             <configuration>
-              <image>linkedwf</image>
+              <image>dblinked-wildfly-uvms</image>
             </configuration>
           </plugin>
         </plugins>
@@ -403,11 +407,17 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+    	<id>docker-linkamq</id>
+    	<properties>
+    		<linkamq>, activemq:amq</linkamq>
+    	</properties>
+    </profile>
   </profiles>
 
   <scm>
     <connection>scm:git:https://github.com/UnionVMS/USM-Backend-Parent.git</connection>
-    <url>https://bitbucket.org/mareteamint/usm-backend-parent</url>
+    <url>https://github.com/UnionVMS/USM-Backend-Parent</url>
     <tag>HEAD</tag>
   </scm>
 </project>
