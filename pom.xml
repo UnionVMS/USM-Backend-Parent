@@ -36,7 +36,7 @@
     <docker.start.phase>process-test-resources</docker.start.phase>
     <wf.port>8080</wf.port>
     <wf.mgtport>9990</wf.mgtport>
-    <linkamq></linkamq>
+    <linkamq />
   </properties>
   <dependencyManagement>
     <dependencies>
