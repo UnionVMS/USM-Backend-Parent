@@ -1,6 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
+   <parent>
+		<groupId>fish.focus.uvms.maven</groupId>
+		<artifactId>uvms-pom</artifactId>
+		<relativePath />
+		<version>1.10</version>
+	</parent>
   <groupId>eu.europa.ec.mare.oss.usm</groupId>
   <!-- Uncomment usm-parent module in backend-modules pom.xml and adapt parent 
     version in modules to the snapshot version below to test parent pom modifications -->
@@ -29,14 +34,16 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.source>1.7</maven.compiler.source>
     <maven.compiler.target>1.7</maven.compiler.target>
-    <citnetpath>webgate.ec.europa.eu/CITnet/</citnetpath>
     <maven.build.timestamp.format>dd/MM/yyyy-HH:mm</maven.build.timestamp.format>
     <maven.version>3.2.1</maven.version>
-    <docker.clean.phase>clean</docker.clean.phase>
-    <docker.start.phase>process-test-resources</docker.start.phase>
-    <wf.port>8080</wf.port>
-    <wf.mgtport>9990</wf.mgtport>
-    <linkamq />
+    <docker.dev.start.phase>none</docker.dev.start.phase>
+    <docker.dev.stop.phase>none</docker.dev.stop.phase>
+            <wf.host>localhost</wf.host>
+        <wf.port>8080</wf.port>
+        <wf.https.port>8443</wf.https.port>
+        <wf.mgtport>9990</wf.mgtport>
+        <wf.adminUserName>admin</wf.adminUserName>
+        <wf.adminPassword>admin</wf.adminPassword>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -158,72 +165,6 @@
             </lifecycleMappingMetadata>
           </configuration>
         </plugin>
-        <plugin>
-          <groupId>io.fabric8</groupId>
-          <artifactId>docker-maven-plugin</artifactId>
-          <version>0.21.0</version>
-          <configuration>
-            <dockerHost>https://${docker.machine.ip}:2376</dockerHost>
-            <certPath>${docker.certPath}</certPath>
-            <useColor>true</useColor>
-            <images>
-              <!-- A wildfly server image configuration -->
-              <image>
-                <name>wildfly-uvms</name>
-                <alias>wf</alias>
-                <build>
-                  <dockerFileDir>Wildfly</dockerFileDir>
-                  <tags>wildfly-uvms</tags>
-                </build>
-                <run>
-                  <ports>
-                    <port>8080:${wf.port}</port>
-                    <port>9990:${wf.mgtport}</port>
-                    <port>8787:8787</port>
-                  </ports>
-                  <wait>
-<!--                     <http>
-                      <url>http://${docker.machine.ip}:${wf.mgtport}/management?operation=attribute&amp;name=server-state</url>
-                      <status>200</status>
-                    </http> -->
-                    <log>WildFly.*started</log>
-                    <time>30000</time>
-                  </wait>
-                </run>
-              </image>
-              <!-- wildfly server linking to a postgres docker container 
-                the linked postgres container is part of the liquibase db project -->
-              <image>
-                <name>dblinked-wildfly-uvms</name>
-                <alias>linkedwf</alias>
-                <build>
-                  <dockerFileDir>Wildfly</dockerFileDir>
-                  <tags>db-wildfly-uvms</tags>
-                </build>
-                <run>
-                  <ports>
-                    <port>8080:${wf.port}</port>
-                    <port>9990:${wf.mgtport}</port>
-                    <port>8787:8787</port>
-                  </ports>
-                  <namingStrategy>alias</namingStrategy>
-                  <links>
-                    <link>usm-pg-db:db${linkamq}</link>
-                  </links>
-                  <wait>
-                  
-<!--                     <http>
-                      <url>http://${docker.machine.ip}:${wf.mgtport}/management?operation=attribute&amp;name=server-state</url>
-                      <status>200</status>
-                    </http> -->
-                    <log>WildFly.*started</log>
-                    <time>30000</time>
-                  </wait>
-                </run>
-              </image>
-            </images>
-          </configuration>
-        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
@@ -241,23 +182,13 @@
     <profile>
       <id>wildfly</id>
       <activation>
-        <activeByDefault>false</activeByDefault>
+        <activeByDefault>true</activeByDefault>
         <!-- Be aware this profile does get deactivated when any other profile 
           gets actived as described in http://maven.apache.org/guides/introduction/introduction-to-profiles.html 
           "All profiles that are active by default are automatically deactivated when 
           a profile in the POM is activated on the command line or through its activation 
           config." -->
       </activation>
-      <properties>
-        <!-- these properties can get ovewritten by setting them in your 
-          maven user settings -->
-        <wf.host>localhost</wf.host>
-        <wf.port>8080</wf.port>
-        <wf.https.port>8443</wf.https.port>
-        <wf.mgtport>9990</wf.mgtport>
-        <wf.adminUserName>wildfly</wf.adminUserName>
-        <wf.adminPassword>wildfly123</wf.adminPassword>
-      </properties>
 
       <build>
         <plugins>
@@ -295,77 +226,6 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
-    </profile>
-    <profile>
-      <id>docker-run</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>io.fabric8</groupId>
-            <artifactId>docker-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>clean</id>
-                <phase>${docker.clean.phase}</phase>
-                <goals>
-                  <goal>stop</goal>
-                  <goal>remove</goal>
-                </goals>
-                <configuration>
-                  <removeAll>true</removeAll>
-                  <allContainers>true</allContainers>
-                </configuration>
-              </execution>
-              <execution>
-                <id>start</id>
-                <phase>${docker.start.phase}</phase>
-                <goals>
-                  <goal>build</goal>
-                  <goal>start</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>docker-testdb</id>
-      <properties>
-        <wf.host>${docker.machine.ip}</wf.host>
-        <endpoint-url>http://${wf.host}:${wf.port}/${webroot}/${restprefix}/</endpoint-url>
-        <docker.filter>wildfly-uvms</docker.filter>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>io.fabric8</groupId>
-            <artifactId>docker-maven-plugin</artifactId>
-            <configuration>
-              <image>wildfly-uvms</image>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>docker-linkdb</id>
-      <properties>
-        <wf.host>${docker.machine.ip}</wf.host>
-        <endpoint-url>http://${wf.host}:${wf.port}/${webroot}/${restprefix}/</endpoint-url>
-        <docker.filter>dblinked-wildfly-uvms</docker.filter>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>io.fabric8</groupId>
-            <artifactId>docker-maven-plugin</artifactId>
-            <configuration>
-              <image>dblinked-wildfly-uvms</image>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
    <profile>
       <id>jacoco</id>
@@ -407,12 +267,174 @@
         </plugins>
       </build>
     </profile>
-    <profile>
-    	<id>docker-linkamq</id>
-    	<properties>
-    		<linkamq>, activemq:amq</linkamq>
-    	</properties>
+            <profile>
+            <id>docker-start</id>
+            <properties>
+                <docker.dev.start.phase>validate</docker.dev.start.phase>
+                <docker.dev.stop.phase>clean</docker.dev.stop.phase>
+            </properties>
+        </profile>
+        <profile>
+            <id>docker-stop</id>
+            <properties>
+                <docker.dev.start.phase>none</docker.dev.start.phase>
+                <docker.dev.stop.phase>clean</docker.dev.stop.phase>
+            </properties>
+        </profile>
+        
+      <profile>
+			<id>docker</id>
+		<properties>
+			 <wf.host>${docker.machine.ip}</wf.host>
+			 <wf.mgtport>9990</wf.mgtport>
+			 <wf.https.port>8443</wf.https.port>
+			 <wf.port>8080</wf.port>			 			 
+			 <wf.adminUserName>admin</wf.adminUserName>
+			 <wf.adminPassword>admin</wf.adminPassword>
+		</properties>
     </profile>
+        <profile>
+            <id>usmdocker</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <version>0.21.0</version>
+                        <executions>
+            <execution>
+                  <id>verifyallstopped</id>
+                  <phase>${docker.dev.stop.phase}</phase>
+                  <goals>
+                    <goal>stop</goal>
+                    <goal>remove</goal>
+                  </goals>
+                  <configuration>
+                    <removeAll>false</removeAll>
+                    <allContainers>true</allContainers>
+                    <removeVolumes>true</removeVolumes>
+                    <useColor>true</useColor>
+                  </configuration>
+                </execution>
+                            <execution>
+                                <id>start</id>
+                                <phase>${docker.dev.start.phase}</phase>
+                                <goals>
+                                    <goal>start</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>stop</id>
+                                <phase>${docker.dev.stop.phase}</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                </goals>
+                                <configuration>
+                                    <allContainers>true</allContainers>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <configuration>
+                        <verbose>true</verbose>
+                            <images>
+                              <image>
+                                    <alias>postgres</alias>
+                                    <name>uvms/postgres-base:${docker.dev.version}</name>
+                                    <run>
+                                        <net>bridge</net>
+                                        <namingStrategy>none</namingStrategy>
+                                        <ports>
+                                            <port>5432:5432</port>
+                                        </ports>
+                                        <wait>
+                                            <log>(?s)ready for start up.*database system is ready to accept connections</log>
+                                            <time>60000</time>
+                                            <kill>2000</kill>
+                                            <shutdown>1000</shutdown>
+                                        </wait>
+                                        <dependsOn>
+                                            <container>activemq</container>
+                                        </dependsOn>
+                                        <links>
+                                            <link>activemq:activemq</link>
+                                        </links>
+                                        <log>
+                                            <enabled>true</enabled>
+                                            <color>green</color>
+                                        </log>
+                                        <hostname>postgres</hostname>
+                                    </run>
+                                </image>
+                            
+                                <image>
+                                    <alias>activemq</alias>
+                                    <name>uvms/activemq:${docker.dev.version}</name>
+                                    <run>
+                                        <net>bridge</net>
+                                        <namingStrategy>none</namingStrategy>
+                                        <ports>
+                                            <port>8161:8161</port>
+                                        </ports>
+                                        <wait>
+                                            <tcp>
+                                                <host>${docker.machine.ip}</host>
+                                                <ports>
+                                                    <port>8161</port>
+                                                </ports>
+                                            </tcp>
+                                            <kill>5000</kill>
+                                            <shutdown>5000</shutdown>
+                                            <time>15000</time>
+                                        </wait>
+                                        <log>
+                                            <enabled>true</enabled>
+                                            <color>red</color>
+                                        </log>
+                                        <hostname>activemq</hostname>
+                                    </run>
+                                </image>
+                                <!-- 
+                                 -->
+                                <image>
+                                    <alias>wildfly</alias>
+                                    <name>uvms/wildfly-base:${docker.dev.version}</name>
+                                    <run>
+                                        <net>bridge</net>
+                                        <namingStrategy>none</namingStrategy>
+                                        <links>
+                                            <link>postgres:postgres</link>
+                                            <link>activemq:activemq</link>
+                                        </links>
+                                        <ports>
+                                            <port>9990:9990</port>
+                                            <port>8787:8787</port>
+                                            <port>8080:8080</port>
+                                            <port>8443:8443</port>                                            
+                                        </ports>
+                                        <wait>
+                                            <log>WildFly 8.2.1.Final "Tweek" started in</log>
+                                            <time>300000</time>
+                                            <kill>2000</kill>
+                                            <shutdown>1000</shutdown>
+                                        </wait>
+                                        <dependsOn>
+                                            <container>postgres</container>
+                                            <container>activemq</container>
+                                        </dependsOn>
+                                        <log>
+                                            <enabled>true</enabled>
+                                            <color>blue</color>
+                                        </log>
+                                        <hostname>wildfly</hostname>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
+                    </plugin>
+            </plugins>
+                    </build>
+                    </profile>
+    
   </profiles>
 
   <scm>
